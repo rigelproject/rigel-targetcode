@@ -1,0 +1,38 @@
+all: benchmark
+OBJDUMP=${RIGEL_INSTALL}/host/bin/rigelobjdump
+
+# WARNING: whitespace after the BENCHMARK_NAME causes BADNESS!
+benchmark: ${BENCHMARK_NAME}.tasks
+	${OBJDUMP} -d -mmipsrigel32 ${BENCHMARK_NAME}.tasks >${BENCHMARK_NAME}.obj
+
+# generates graphs using the graphviz dot package based on whatever .dot files
+# are lying around (see OPT_PRINT_FLAGS)
+graphs:
+	mkdir -p viz
+	find . -maxdepth 1 -name "*.dot" -exec dot -T png -o viz/`basename {} .dot`.png {} \;
+
+STEMS_C	= $(patsubst %.f,%, $(patsubst %.c,%, $(SOURCES)))
+STEMS_ASM = $(patsubst %.f,%, $(patsubst %.S,%, $(ASM)))
+STEMS = ${STEMS_ASM} ${STEMS_C}
+OBJS = $(patsubst %,%.ro,$(STEMS))
+CLEAN_C = $(patsubst %,%.S,$(STEMS_C))
+
+include ${RIGEL_TARGETCODE}/src/Makefile.common
+
+QUEUE_TYPE="CLUSTER_LOCAL_TQ"
+# Set to enable using optimized ASM inner loop code. 
+# INNER_LOOP = ASM
+# INNER_LOOP = VECTOR
+INNER_LOOP = C	
+
+override EXTRA_CFLAGS += -D${QUEUE_TYPE} -DINNER_LOOP_$(INNER_LOOP) -Wall
+
+#FIXMD what are these for, x86 mode?
+CFLAGS += -I. $(DEBUGFLAGS) -g
+
+clean:
+	rm -f *.i *.o *.s *.ro *.dump *.tasks *.bc *.a *.obj *.csv ${CLEAN_C} *.dot
+
+%.tasks: $(SOURCES) $(ASM)
+	$(CLANG) $(CLANG_CFLAGS) $(EXTRA_CFLAGS) $(SOURCES) $(ASM) $(CLANG_LDFLAGS) $(EXTRA_LDFLAGS) -o ${BENCHMARK_NAME}.tasks
+

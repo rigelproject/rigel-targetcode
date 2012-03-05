@@ -1,0 +1,22 @@
+block UG(uniform grid)
+use uniform grid not only to index into v, but to contain the acctual vertices, to improve locality 
+but this might be not too helpful, maybe we need the UG to index,
+but into a more organaized set of points
+Think about recursively reerange the point set by several closest neighbors
+block hash table, look into it
+checktetra in first tetra is expensive
+rethink first terta creation, maybe start from left and restrict points outside boubdaries
+
+
+to do master slave approach I have to enqueue only to local queue to enforce list synchronization
+
+
+4096*8
+26.5 sequntial
+52.4 parallel in seq manner(16 way)  - 3.275 eacg part
+4.78 each part of parallel(1 of 16)
+
+4096*16
+62.1 sequnetial
+131.425s 16 way parallel in seq
+10.9 for 1 part

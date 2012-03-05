@@ -1,0 +1,49 @@
+INCLUDEDIR=${RIGEL_INSTALL}/target/include
+MCUDA_INCLUDEDIR=${RIGEL_MISC}/mcuda/include
+CUDA_INCLUDEDIR=/usr/local/cuda/include
+LIBDIR=${RIGEL_INSTALL}/target/lib
+RIGELSIMDIR=${RIGEL_SIM}/rigel-sim/
+RIGELSIM=${RIGEL_INSTALL}/host/bin/rigelsim
+AR=rigelar
+RANLIB=rigelranlib
+RIGELAS=rigelas
+RIGELLD=rigelld
+
+# GCC Flags for X86
+CXX=g++
+CXXFLAGS=-DX86
+CFLAGS=-DX86 -fsingle-precision-constant
+CC=gcc
+
+# Binutils flags
+RIGELAS_FLAGS=-EL -march=mipsrigel32
+RIGELLD_FLAGS=-EL -T/${LIBDIR}/linker/rigel.ld --oformat elf32-bigmips
+
+LLVM_BUILD_CONFIG = Release+Asserts
+CLANG = ${RIGEL_INSTALL}/host/bin/clang
+CLANGXX = ${RIGEL_INSTALL}/host/bin/clang++
+CLANG_LDFLAGS = -Xlinker "--oformat=elf32-bigmips" -Xlinker "-T${LIBDIR}/linker/rigel.ld" 
+CLANG_LDFLAGS_X86 =
+CLANG_TARGETFLAGS = -ccc-host-triple rigel-unknown-unknown
+CLANG_TARGETFLAGS_X86 =
+CLANG_DEFINEFLAGS =  -DLLVM28 -DRIGEL
+CLANG_DEFINEFLAGS_X86 =
+CLANG_INCLUDEFLAGS = -Qunused-arguments -nostdinc -I${RIGEL_INSTALL}/host/lib/clang/2.8/include -I. -I${INCLUDEDIR} -I${RIGELSIMDIR}/includes
+CLANG_INCLUDEFLAGS_X86 =
+CLANG_LANGUAGEFLAGS =
+CLANG_LANGUAGEFLAGS_X86 =
+CLANG_OPTIFLAGS = -O3 -ffast-math -fomit-frame-pointer
+CLANG_LDFLAGS += -static -lm -lpar
+CLANG_LDFLAGS_X86 += -lm
+CLANG_CFLAGS = $(CLANG_TARGETFLAGS) $(CLANG_LANGUAGEFLAGS) $(CLANG_INCLUDEFLAGS) \
+               $(CLANG_DEFINEFLAGS) $(CLANG_OPTIFLAGS)
+CLANG_CFLAGS_X86 = $(CLANG_TARGETFLAGS_X86) $(CLANG_LANGUAGEFLAGS_X86) $(CLANG_INCLUDEFLAGS_X86) \
+                   $(CLANG_DEFINEFLAGS_X86) $(CLANG_OPTIFLAGS)
+CLANG_CXXFLAGS = $(CLANG_CFLAGS) #Same as CFLAGS for now
+CLANG_CXXFLAGS_X86 = $(CLANG_CFLAGS_X86)
+
+# Merge stuff
+MERGEGREP=grep -e '^[ ]*[0-9a-f]\+:' 
+LABELSGREP=grep -e '^[0-9a-f]\+ ' 
+MERGE=../merge 
+

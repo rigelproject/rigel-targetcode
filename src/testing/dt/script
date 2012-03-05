@@ -1,0 +1,2 @@
+rm -f cerr 
+rigelsim dt.tasks 2>>cerr

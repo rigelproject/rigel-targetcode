@@ -1,0 +1,55 @@
+all: benchmark
+OBJDUMP=${RIGEL_INSTALL}/host/bin/rigelobjdump
+
+# WARNING: whitespace after the BENCHMARK_NAME causes BADNESS!
+# if you have compile problems and make is using GCC, check this...
+benchmark: ${BENCHMARK_NAME}.tasks
+	${OBJDUMP} -d -mmipsrigel32 ${BENCHMARK_NAME}.tasks >${BENCHMARK_NAME}.obj
+
+# generates graphs using the graphviz dot package based on whatever .dot files
+# are lying around (see OPT_PRINT_FLAGS)
+graphs:
+	mkdir -p viz
+	find . -maxdepth 1 -name "*.dot" -exec dot -T png -o viz/`basename {} .dot`.png {} \;
+
+#STEMS_C	= $(patsubst %.f,%, $(patsubst %.c,%, $(SOURCES)))
+OBJS_C = $(SOURCES_C:.c=.ro)
+OBJS_CPP = $(SOURCES_CPP:.cpp=.ro)
+OBJS_ASM = $(ASM:.S=.ro)
+STEMS_ASM = $(patsubst %.f,%, $(patsubst %.S,%, $(ASM)))
+STEMS = ${STEMS_ASM} ${STEMS_C}
+OBJS = $(patsubst %,%.ro,$(STEMS))
+CLEAN_C = $(patsubst %,%.S,$(STEMS_C))
+
+include ${RIGEL_TARGETCODE}/src/Makefile.common
+
+LLC_FLAGS += #-debug-only=loop-unroll
+QUEUE_TYPE="CLUSTER_LOCAL_TQ"
+# Set to enable using optimized ASM inner loop code. 
+# INNER_LOOP = ASM
+# INNER_LOOP = VECTOR
+INNER_LOOP = C	
+
+override EXTRA_CFLAGS += -D${QUEUE_TYPE} -DINNER_LOOP_$(INNER_LOOP) -Wall
+
+#FIXME what are these for, x86 mode?
+CFLAGS += -I. $(DEBUGFLAGS) -g -DSOMETHING_IS_SCREWY
+
+clean:
+	rm -f *.i *.o *.s *.ro *.dump *.tasks *.bc *.a *.obj *.csv ${CLEAN_C} *.dot
+
+%.tasks: $(OBJS_C) $(OBJS_CPP) $(OBJS_ASM)
+	$(CLANG) $(CLANG_CFLAGS) $(EXTRA_CFLAGS) $(OBJS_C) $(OBJS_CPP) $(OBJS_ASM) $(CLANG_LDFLAGS) $(EXTRA_LDFLAGS) -o $@
+
+%.ro : %.S
+	rigelas $(RIGELAS_FLAGS) -o $@ $< 2>>cerr.dump 1>>cout.dump
+
+%.ro : %.c
+	$(CLANG) $(CLANG_CFLAGS) $(EXTRA_CFLAGS) -c $< -o $@
+
+%.ro : %.cpp
+	$(CLANGXX) $(CLANG_CXXFLAGS) $(EXTRA_CXXFLAGS) -c $< -o $@
+
+#%.tasks: $(SOURCES) $(ASM)
+#	$(CLANG) $(CLANG_CFLAGS) $(EXTRA_CFLAGS) $(SOURCES) $(ASM) $(CLANG_LDFLAGS) $(EXTRA_LDFLAGS) -o ${BENCHMARK_NAME}.tasks
+

@@ -1,0 +1,11 @@
+RUN_OUTPUT
+*.dump
+*.ro
+*.o
+*.a
+*.la
+*.so
+*.bc
+*.x86
+*.dot
+*.tasks
