@@ -60,7 +60,7 @@ ${SRC}/configure ${HOSTARG} --prefix=${INSTALLDIR} --target=rigel --with-newlib 
 CC_FOR_TARGET=${RIGEL_INSTALL}/host/bin/clang CXX_FOR_TARGET=${RIGEL_INSTALL}/host/bin/clang++ AR_FOR_TARGET=rigelar AS_FOR_TARGET=rigelas \
 LD_FOR_TARGET=rigelld NM_FOR_TARGET=rigelnm RANLIB_FOR_TARGET=rigelranlib OBJDUMP_FOR_TARGET=rigelobjdump \
 STRIP_FOR_TARGET=rigelstrip \
-CFLAGS_FOR_TARGET="-ccc-host-triple rigel-unknown-unknown -Qunused-arguments -nostdinc -I${RIGEL_INSTALL}/host/lib/clang/2.8/include -I${RIGEL_INSTALL}/target/include -I${RIGEL_SIM}/rigel-sim/includes -DLLVM28 -DRIGEL -O3 -ffast-math"
+CFLAGS_FOR_TARGET="-ccc-host-triple rigel-unknown-unknown -Qunused-arguments -nostdinc -I${RIGEL_INSTALL}/host/lib/clang/2.8/include -I${RIGEL_INSTALL}/target/include -I${RIGEL_SIM}/rigel-sim/include -DLLVM28 -DRIGEL -O3 -ffast-math"
 if [ $? -ne 0 ]
 then
 	echo "[NEWLIB] CONFIGURE FAILED"

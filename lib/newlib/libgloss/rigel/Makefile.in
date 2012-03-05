@@ -44,7 +44,7 @@ OBJCOPY = `if [ -f ${objroot}/../binutils/objcopy ] ; \
 	else t='$(program_transform_name)'; echo objcopy | sed -e $$t ; fi`
 
 OBJS		= spinlock.o timer.o lock.o util.o
-CFLAGS		= -ccc-host-triple rigel-unknown-unknown -fno-builtin -I. -I$(RIGEL_TARGETCODE)/include -I$(RIGEL_SIM)/rigel-sim/includes -DLLVM28 -DRIGEL -O3 -D"CLUSTER_LOCAL_TQ" -DINNER_LOOP_C -Wall -Xlinker --oformat=elf32-bigmips -Xlinker -T$(RIGEL_TARGETCODE)/lib/linker/rigel.ld
+CFLAGS		= -ccc-host-triple rigel-unknown-unknown -fno-builtin -I. -I$(RIGEL_TARGETCODE)/include -I$(RIGEL_SIM)/rigel-sim/include -DLLVM28 -DRIGEL -O3 -D"CLUSTER_LOCAL_TQ" -DINNER_LOOP_C -Wall -Xlinker --oformat=elf32-bigmips -Xlinker -T$(RIGEL_TARGETCODE)/lib/linker/rigel.ld
 SCRIPTS		= 
 
 # Here is all of the simulator stuff
