@@ -24,6 +24,12 @@
 #define MIN(x,y) (((x)>(y)) ? (y) : (x))
 #define MAX(x,y) (((x)>(y)) ? (x) : (y))
 
+//Uncomment this to dump a binary file at the end of the simulation
+//Containing all triangles found by marching cubes.
+//bin_to_obj can be used to turn this binary file into a
+//.obj file for use in a 3D mesh viewer (e.g., MeshLab).
+//#define DUMP_TRIANGLES
+
 ATOMICFLAG_INIT_CLEAR(flag);
 int incoherent_malloc_enabled;
 const int QID = 0;
@@ -879,10 +885,20 @@ int main(int argc, char *argv[])
     atomic_flag_spin_until_set(&flag);
   }
   marchWorkerThread();
-  if(thread == 0)
+  if(thread == 0) {
     StopTimer(0);
-  //RigelPrint(trianglePtrs[thread]);
-  //RigelPrint(triangles[thread]);
+#ifdef DUMP_TRIANGLES
+		FILE *out = fopen("triangles.out", "wb");
+		assert(out && "Could not open output file");
+		int numTriangles = 0;
+		for(int i = 0; i < RigelGetNumThreads(); i++)
+      numTriangles += (trianglePtrs[i] - triangles[i])/9;
+    fwrite(&numTriangles, sizeof(numTriangles), 1, out);
+		for(int i = 0; i < RigelGetNumThreads(); i++)
+			fwrite(triangles[i], sizeof(*(triangles[i])), trianglePtrs[i] - triangles[i], out);
+		fclose(out);
+#endif //#ifdef DUMP_TRIANGLES
+	}
   RigelPrint(trianglePtrs[thread]-triangles[thread]);
   return 0;
 }
