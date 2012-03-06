@@ -9,3 +9,4 @@ RUN_OUTPUT
 *.x86
 *.dot
 *.tasks
+*.obj
