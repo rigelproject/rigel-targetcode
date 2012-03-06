@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "rigel.h"
+#include <stdlib.h>
 
 const int nn = 16;
 
@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
   if (nn<2 || nn&(nn-1))
   {
     printf("Error: nn must be power of 2 in four1 (not %d)\n", nn);
-    RigelAbort();
+    exit(1);
   }
   n = nn << 1;
   j = 1;
