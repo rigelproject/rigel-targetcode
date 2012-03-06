@@ -1,5 +1,5 @@
 #FIXME Add more subdirectories as we update them to work with this build system
-SUBDIRS=assert bitreverse blocks charargs cxa_demangle fmadd malloc pthread setjmp_simple setjmp_complex pq pqst printf rand rtti sincos varargs
+SUBDIRS=assert bitreverse blocks charargs cxa_demangle fmadd malloc pthread setjmp_simple setjmp_complex printf rand rtti sincos varargs
 
 all:
 	@for i in $(SUBDIRS); do \
