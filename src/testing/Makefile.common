@@ -6,6 +6,8 @@ OBJDUMP=${RIGEL_INSTALL}/host/bin/rigelobjdump
 benchmark: ${BENCHMARK_NAME}.tasks
 	${OBJDUMP} -d -mmipsrigel32 ${BENCHMARK_NAME}.tasks >${BENCHMARK_NAME}.obj
 
+host: ${BENCHMARK_NAME}.host
+
 # generates graphs using the graphviz dot package based on whatever .dot files
 # are lying around (see OPT_PRINT_FLAGS)
 graphs:
@@ -21,6 +23,12 @@ STEMS = ${STEMS_ASM} ${STEMS_C}
 OBJS = $(patsubst %,%.ro,$(STEMS))
 CLEAN_C = $(patsubst %,%.S,$(STEMS_C))
 
+OBJS_C_HOST = $(SOURCES_C:.c=.o)
+OBJS_CPP_HOST = $(SOURCES_CPP:.cpp=.o)
+STEMS_HOST = ${STEMS_ASM_HOST} ${STEMS_C_HOST}
+OBJS_HOST = $(patsubst %,%.o,$(STEMS_HOST))
+CLEAN_C_HOST = $(patsubst %,%.S,$(STEMS_C_HOST))
+
 include ${RIGEL_TARGETCODE}/src/Makefile.common
 
 LLC_FLAGS += #-debug-only=loop-unroll
@@ -32,14 +40,14 @@ INNER_LOOP = C
 
 override EXTRA_CFLAGS += -D${QUEUE_TYPE} -DINNER_LOOP_$(INNER_LOOP) -Wall
 
-#FIXME what are these for, x86 mode?
-CFLAGS += -I. $(DEBUGFLAGS) -g -DSOMETHING_IS_SCREWY
-
 clean:
 	rm -f *.i *.o *.s *.ro *.dump *.tasks *.bc *.a *.obj *.csv ${CLEAN_C} *.dot
 
 %.tasks: $(OBJS_C) $(OBJS_CPP) $(OBJS_ASM)
 	$(CLANG) $(CLANG_CFLAGS) $(EXTRA_CFLAGS) $(OBJS_C) $(OBJS_CPP) $(OBJS_ASM) $(CLANG_LDFLAGS) $(EXTRA_LDFLAGS) -o $@
+
+%.host: $(OBJS_C_HOST) $(OBJS_CPP_HOST)
+	$(CLANG) $(CLANG_CFLAGS_HOST) $(EXTRA_CFLAGS) $(OBJS_C_HOST) $(OBJS_CPP_HOST) $(CLANG_LDFLAGS_HOST) $(EXTRA_LDFLAGS) -o $@
 
 %.ro : %.S
 	rigelas $(RIGELAS_FLAGS) -o $@ $< 2>>cerr.dump 1>>cout.dump
@@ -50,6 +58,8 @@ clean:
 %.ro : %.cpp
 	$(CLANGXX) $(CLANG_CXXFLAGS) $(EXTRA_CXXFLAGS) -c $< -o $@
 
-#%.tasks: $(SOURCES) $(ASM)
-#	$(CLANG) $(CLANG_CFLAGS) $(EXTRA_CFLAGS) $(SOURCES) $(ASM) $(CLANG_LDFLAGS) $(EXTRA_LDFLAGS) -o ${BENCHMARK_NAME}.tasks
+%.o : %.c
+	$(CLANG) $(CLANG_CFLAGS_HOST) $(EXTRA_CFLAGS) -c $< -o $@
 
+%.o : %.cpp
+	$(CLANGXX) $(CLANG_CXXFLAGS_HOST) $(EXTRA_CXXFLAGS) -c $< -o $@

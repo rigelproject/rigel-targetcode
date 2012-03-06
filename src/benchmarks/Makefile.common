@@ -27,9 +27,6 @@ INNER_LOOP = C
 
 override EXTRA_CFLAGS += -D${QUEUE_TYPE} -DINNER_LOOP_$(INNER_LOOP) -Wall
 
-#FIXMD what are these for, x86 mode?
-CFLAGS += -I. $(DEBUGFLAGS) -g
-
 clean:
 	rm -f *.i *.o *.s *.ro *.dump *.tasks *.bc *.a *.obj *.csv ${CLEAN_C} *.dot
 
