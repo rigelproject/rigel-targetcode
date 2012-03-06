@@ -57,8 +57,8 @@ typedef struct
 //a2fVertexOffset lists the positions, relative to vertex0, of each of the 8 vertices of a cube
 static const float a2fVertexOffset[8][3] =
 {
-  {0.0, 0.0, 0.0},{1.0, 0.0, 0.0},{1.0, 1.0, 0.0},{0.0, 1.0, 0.0},
-  {0.0, 0.0, 1.0},{1.0, 0.0, 1.0},{1.0, 1.0, 1.0},{0.0, 1.0, 1.0}
+  {0.0f, 0.0f, 0.0f},{1.0f, 0.0f, 0.0f},{1.0f, 1.0f, 0.0f},{0.0f, 1.0f, 0.0f},
+  {0.0f, 0.0f, 1.0f},{1.0f, 0.0f, 1.0f},{1.0f, 1.0f, 1.0f},{0.0f, 1.0f, 1.0f}
 };
 
 static const unsigned int a2uVertexOffset[8][3] =
@@ -78,9 +78,9 @@ static const int a2iEdgeConnection[12][2] =
 //a2fEdgeDirection lists the direction vector (vertex1-vertex0) for each edge in the cube
 static const float a2fEdgeDirection[12][3] =
 {
-  {1.0, 0.0, 0.0},{0.0, 1.0, 0.0},{-1.0, 0.0, 0.0},{0.0, -1.0, 0.0},
-  {1.0, 0.0, 0.0},{0.0, 1.0, 0.0},{-1.0, 0.0, 0.0},{0.0, -1.0, 0.0},
-  {0.0, 0.0, 1.0},{0.0, 0.0, 1.0},{ 0.0, 0.0, 1.0},{0.0,  0.0, 1.0}
+  {1.0f, 0.0f, 0.0f},{0.0f, 1.0f, 0.0f},{-1.0f, 0.0f, 0.0f},{0.0f, -1.0f, 0.0f},
+  {1.0f, 0.0f, 0.0f},{0.0f, 1.0f, 0.0f},{-1.0f, 0.0f, 0.0f},{0.0f, -1.0f, 0.0f},
+  {0.0f, 0.0f, 1.0f},{0.0f, 0.0f, 1.0f},{ 0.0f, 0.0f, 1.0f},{0.0f,  0.0f, 1.0f}
 };
 
 static const int a2iEdgeDirection[12][3] =
@@ -112,9 +112,9 @@ float fGetOffset(float fValue1, float fValue2, float fValueDesired)
 {
   float fDelta = fValue2 - fValue1;
 
-  if(fDelta == 0.0)
+  if(fDelta == 0.0f)
   {
-    return 0.5;
+    return 0.5f;
   }
   return (fValueDesired - fValue1)/fDelta;
 }
@@ -129,7 +129,7 @@ void vNormalizeVector(vector *rfVectorResult, vector *rfVectorSource)
           (rfVectorSource->fY * rfVectorSource->fY) +
           (rfVectorSource->fZ * rfVectorSource->fZ) );
 
-  if(fOldLength == 0.0)
+  if(fOldLength == 0.0f)
   {
     rfVectorResult->fX = rfVectorSource->fX;
     rfVectorResult->fY = rfVectorSource->fY;
@@ -137,7 +137,7 @@ void vNormalizeVector(vector *rfVectorResult, vector *rfVectorSource)
   }
   else
   {
-    fScale = 1.0/fOldLength;
+    fScale = 1.0f/fOldLength;
     rfVectorResult->fX = rfVectorSource->fX*fScale;
     rfVectorResult->fY = rfVectorSource->fY*fScale;
     rfVectorResult->fZ = rfVectorSource->fZ*fScale;
@@ -146,8 +146,8 @@ void vNormalizeVector(vector *rfVectorResult, vector *rfVectorSource)
 
 float fSample(float fX, float fY, float fZ)
 {
-  //return (6.0*fX - 3.0)*sin(6.0*fY - 3.0) + sin(powf(0.5*fZ - 2.0, 3.0));
-  return ((fX*fX)+(fY*fY)+(fZ*fZ)-(2.0*2.0));
+  //return (6.0f*fX - 3.0f)*sinf(6.0f*fY - 3.0f) + sinf(powf(0.5f*fZ - 2.0f, 3.0f));
+  return ((fX*fX)+(fY*fY)+(fZ*fZ)-(2.0f*2.0f));
 }
 
 float fGridSample(unsigned int fX, unsigned int fY, unsigned int fZ)
@@ -166,9 +166,9 @@ float fGridSample(unsigned int fX, unsigned int fY, unsigned int fZ)
 //This gradient can be used as a very accurate vertex normal for lighting calculations
 void vGetNormal(vector *rfNormal, float fX, float fY, float fZ)
 {
-  rfNormal->fX = fSample(fX-0.01, fY, fZ) - fSample(fX+0.01, fY, fZ);
-  rfNormal->fY = fSample(fX, fY-0.01, fZ) - fSample(fX, fY+0.01, fZ);
-  rfNormal->fZ = fSample(fX, fY, fZ-0.01) - fSample(fX, fY, fZ+0.01);
+  rfNormal->fX = fSample(fX-0.01f, fY, fZ) - fSample(fX+0.01f, fY, fZ);
+  rfNormal->fY = fSample(fX, fY-0.01f, fZ) - fSample(fX, fY+0.01f, fZ);
+  rfNormal->fZ = fSample(fX, fY, fZ-0.01f) - fSample(fX, fY, fZ+0.01f);
   vNormalizeVector(rfNormal, rfNormal);
 }
 
@@ -339,7 +339,7 @@ void vMarchingCubes()
   for(iY = 0; iY < (ny-1); iY++)
   for(iZ = 0; iZ < (nz-1); iZ++)
   {
-    vMarchCube(iX, iY, iZ, 1.0);
+    vMarchCube(iX, iY, iZ, 1.0f);
     //vMarchCube(iX*fStepSize, iY*fStepSize, iZ*fStepSize, fStepSize);
   }
 }
@@ -731,7 +731,7 @@ void marchWorkerThread()
       zmax = MIN(zmin+bz, (nz-1));
       */
 
-			//MRJ 20111118 Print this out to track run progress
+			//Print this out to track run progress
       RigelPrint(0xF0F0F0F0);
       //RigelPrint(tdesc.v3);
       //RigelPrint(xblocknum);
@@ -849,7 +849,7 @@ int main(int argc, char *argv[])
     }
     RigelFlushLine(&triangles);
     RigelFlushLine(&trianglePtrs);
-    //fStepSize = 4.0/iDataSetSize;
+    //fStepSize = 4.0f/iDataSetSize;
     RIGEL_INIT(QID, MAX_TASKS);
     SW_TaskQueue_Set_TASK_GROUP_FETCH(4);
     SW_TaskQueue_Set_LOCAL_ENQUEUE_COUNT(4);
