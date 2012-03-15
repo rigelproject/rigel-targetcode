@@ -38,16 +38,6 @@ SW_TaskQueue_Loop_SEQUENTIAL(int qID, int tot_iters, int iters_per_task,
   {
     asm volatile (
       /* Grab the tail pointer and put in r20         */
-      "   addi     $sp, $sp, -44                      \n"
-      "   stw     $20, $sp, 4                         \n"
-      "   stw     $21, $sp, 8                         \n"
-      "   stw     $22, $sp, 12                        \n"
-      "   stw     $23, $sp, 16                        \n"
-      "   stw     $24, $sp, 20                        \n"
-      "   stw     $25, $sp, 24                        \n"
-      "   stw     $26, $sp, 28                        \n"
-      "   stw     $27, $sp, 32                        \n"
-      "   stw     $28, $sp, 36                        \n"
       "   mvui    $20, %%hi(GLOBAL_tq_tail_index);    \n"
       "   addi    $20, $20, GLOBAL_tq_tail_index      \n"
       /* data_idx (r20) = tail_idx */
@@ -145,6 +135,7 @@ SW_TaskQueue_Loop_SEQUENTIAL(int qID, int tot_iters, int iters_per_task,
         "r"(iters_per_task),   // %1
         "r"(tdesc->v1),        // %2
         "r"(tdesc->v2)         // %3
+      : "20", "21", "22", "23", "24", "25", "26", "27", "28", "memory"
     );
   }
   // XXX: RELEASE LOCK [[ENQUEUE]]
@@ -191,9 +182,6 @@ SW_TaskQueue_Loop_PARALLEL(int qID, int tot_iters, int iters_per_task,
     //
     // If we fail to get the lock, try again.
     asm volatile (
-        "   addi  $sp, $sp, -12                \n"
-        "   stw   $26, $sp, 4                  \n"
-        "   stw   $27, $sp, 8                  \n"
         "   mvui  $27, %%hi(CLUSTER_gtq_lock); \n"
         "   addi  $27,  $27, CLUSTER_gtq_lock;  \n"
         "   mfsr  $26, $4;                  \n"
@@ -211,12 +199,9 @@ SW_TaskQueue_Loop_PARALLEL(int qID, int tot_iters, int iters_per_task,
         "   ori   %0, $zero, 1              \n" // Success
         "                                   \n"
         "L%=_exit:                          \n" 
-        "   ldw   $26, $sp, 4               \n"
-        "   ldw   $27, $sp, 8               \n"
-        "   addi  $sp, $sp, 12              \n"                  
       : "=r"(has_global_lock) 
       :
-      : "27", "26", "1"
+      : "27", "26", "1", "memory"
         );
   }
 //PRINT_HISTOGRAM(0xccdd0001);
@@ -438,16 +423,6 @@ EVENTTRACK_ENQUEUE_GROUP_START();
             asm volatile (
               /* Grab the tail pointer and put in (static) (r20)  */
 //"mvui $28, 0xbaab\n"
-      "   addi     $sp, $sp, -40                         \n"
-      "   stw     $20, $sp, 4                         \n"
-      "   stw     $21, $sp, 8                         \n"
-      "   stw     $22, $sp, 12                         \n"
-      "   stw     $23, $sp, 16                         \n"
-      "   stw     $24, $sp, 20                         \n"
-      "   stw     $25, $sp, 24                         \n"
-      "   stw     $26, $sp, 28                         \n"
-      "   stw     $27, $sp, 32                         \n"
-      "   stw     $28, $sp, 36                         \n"
               "   mvui        $20, %%hi(GLOBAL_tq_tail_index);    \n"
               "   addi        $20, $20, GLOBAL_tq_tail_index      \n"
               /* Get GLOBAL_taskqueue_data (static) (r21)         */
@@ -532,23 +507,12 @@ EVENTTRACK_ENQUEUE_GROUP_START();
               // XXX END CRITICAL SECTION XXX
               /* spin_unlock(&GLOBAL_tq_enqueue_lock);           */
               "   atom.xchg      $zero, %2, 0                     \n"  
-      "   ldw     $20, $sp, 4                         \n"
-      "   ldw     $21, $sp, 8                         \n"
-      "   ldw     $22, $sp, 12                         \n"
-      "   ldw     $23, $sp, 16                         \n"
-      "   ldw     $24, $sp, 20                         \n"
-      "   ldw     $25, $sp, 24                         \n"
-      "   ldw     $26, $sp, 28                         \n"
-      "   ldw     $27, $sp, 32                         \n"
-      "   ldw     $28, $sp, 36                         \n"
-      "   addi    $sp, $sp, 40                         \n"
-//"addi $28, $28, 1\n"
-//"printreg  $28\n"
               : /* OUTPUT*/
               : /* INPUT */
                 "r"(task_count * sizeof(unsigned int)),       // %0
                 "r"(tq_offset  * sizeof(TQ_TaskDescEntry)),   // %1
                 "r"(&GLOBAL_tq_enqueue_lock)
+							: "20", "21", "22", "23", "24", "25", "26", "27", "28", "memory"
             );
             asm volatile (" #; [[ENQUEUE LOOP ]] END INLINE ASM CRIT SECTION  ");
             #endif

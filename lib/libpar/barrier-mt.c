@@ -65,9 +65,6 @@ void RigelBarrierMT_EnterFull(RigelBarrierMT_Info *info)
   int threadnum = RigelGetThreadNum();
 
   asm volatile (
-    // spill
-    "   addi    $sp, $sp, -16                       \n"
-    "   stw     $25, $sp, 4                       \n"
     /* r28: CLUSTER_NUM                     */
     "   mfsr    $28, $4                       \n"
     // r25: THREADS_PER_CLUSTER (added for MT) 
@@ -121,15 +118,12 @@ void RigelBarrierMT_EnterFull(RigelBarrierMT_Info *info)
      * number of clusters
      */
     "BAR_done%=:                              \n"
-    // unspill
-    "   ldw     $25, $sp, 4                       \n"
-    "   addi    $sp, $sp, 16                       \n"
     :
     : "r"((volatile void *)info->local_complete),
       "r"(((volatile void *)&(info->global_compete))),
       "r"(info->local_sense[threadnum]),
       "r"(&info->global_reduce_done)
-    : "25", "26", "27", "28"
+    : "1", "25", "26", "27", "28", "memory"
     );
 
 //RigelPrint(threadnum + 0x10); for debug

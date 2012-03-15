@@ -20,9 +20,6 @@ SW_TaskQueue_Dequeue_SLOW(int qID, TQ_TaskDesc *tdesc)
 
   // Enter the per-cluster provisional barrier
   asm volatile ( 
-      "   addi  $sp, $sp, -12                     \n"
-      "   stw   $26, $sp, 4                       \n"
-      "   stw   $27, $sp, 8                       \n"
       "   mvui  $1, %%hi(CLUSTER_core_waitcount); \n"
       "   addi  $1, $1, CLUSTER_core_waitcount; \n"
       "   mfsr  $26, $4;                  \n"
@@ -33,12 +30,9 @@ SW_TaskQueue_Dequeue_SLOW(int qID, TQ_TaskDesc *tdesc)
       "   addi  $26, $26, 1; \n"  // CLUSTER_core_waitcount[cluster_num]++
       "   stc   $1, $26, $27; \n"
       "   beq   $1, $zero, L%=_00;\n"
-      "   ldw   $26, $sp, 4 \n"
-      "   ldw   $27, $sp, 8 \n"
-      "   addi  $sp, $sp, 12 \n"
       :
     : 
-    : "27", "26", "1"
+    : "1", "26", "27", "memory"
   );
 
   while (1) {
@@ -46,9 +40,6 @@ SW_TaskQueue_Dequeue_SLOW(int qID, TQ_TaskDesc *tdesc)
     succ = 0;
     // Check to see if a barrier has been reached
     asm volatile (
-          "   addi  $sp, $sp, -12                     \n"
-          "   stw   $26, $sp, 4                       \n"
-          "   stw   $27, $sp, 8                       \n"
           "   mvui  $27, %%hi(CLUSTER_percore_sense); \n"
           "   addi  $27,  $27, CLUSTER_percore_sense;   \n"
           "   mfsr  $26, $4;                          \n" // r26 has cluster_num
@@ -68,10 +59,9 @@ SW_TaskQueue_Dequeue_SLOW(int qID, TQ_TaskDesc *tdesc)
           "   stw   $1, $27, 0                        \n" 
           "   xor   %0, %0, %0                        \n" // Not equal, succ <- 0
           "L%=_continue:                              \n" // Fall through when they do not equal
-          "   ldw   $26, $sp, 4 \n"
-          "   ldw   $27, $sp, 8 \n"
-          "   addi  $sp, $sp, 12 \n"
-          : "=r"(succ), "=r"(cluster_num) //, "=r"(thread_num)
+          : "=r"(succ), "=r"(cluster_num)
+					:
+					: "1", "26", "27", "memory"
     );
     if (!succ) { 
       return TQ_RET_SYNC; 
@@ -92,13 +82,6 @@ SW_TaskQueue_Dequeue_SLOW(int qID, TQ_TaskDesc *tdesc)
     // from the global queue
     if (NULL != CLUSTER_taskqueue_head[8*cluster_num]) {
       asm volatile ( 
-            "   addi  $sp, $sp,  -28;   \n"
-            "   stw   $23, $sp,  4;   \n"  // spill r23
-            "   stw   $24, $sp,  8;   \n"  // spill 
-            "   stw   $25, $sp,  12;   \n"  // spill 
-            "   stw   $26, $sp,  16;   \n"  // spill r23
-            "   stw   $27, $sp,  20;   \n"  // spill 
-            "   stw   $28, $sp,  24;   \n"  // spill 
             "   mfsr  $27, $4;    \n"     // 27 holds the cluster_num
             "   slli  $27, $27, 2; \n"
             // Shift by the BYTES_PER_LINE to remove false sharing penalty.
@@ -138,16 +121,9 @@ SW_TaskQueue_Dequeue_SLOW(int qID, TQ_TaskDesc *tdesc)
             "   ldw   $27, $1, 0\n"
             "   addiu $27, $27, 1\n"
             "   stw   $27, $1, 0\n"
-            "   ldw   $23, $sp,  4;   \n"  // spill r23
-            "   ldw   $24, $sp,  8;   \n"  // spill 
-            "   ldw   $25, $sp,  12;   \n"  // spill 
-            "   ldw   $26, $sp,  16;   \n"  // spill
-            "   ldw   $27, $sp,  20;   \n"  // spill 
-            "   ldw   $28, $sp,  24;   \n"  // spill 
-            "   addi  $sp, $sp,  28;   \n"
           :
           : "r"(tdesc)
-          : "2", "23", "24", "25", "26", "27", "1"
+          : "1", "23", "24", "25", "26", "27", "28", "memory"
         );
         return TQ_RET_SUCCESS;
       } else {
@@ -160,9 +136,6 @@ SW_TaskQueue_Dequeue_SLOW(int qID, TQ_TaskDesc *tdesc)
         // check for new tasks, otherwise drop the local lock and go out to
         // global task queue.  If we fail to get the lock, try again.
         asm volatile ( 
-            "   addi  $sp, $sp, -12                     \n"
-            "   stw   $26, $sp, 4                       \n"
-            "   stw   $27, $sp, 8                       \n"
             "   mvui  $27, %%hi(CLUSTER_gtq_lock); \n"
             "   addi  $27,  $27, CLUSTER_gtq_lock;  \n"
             "   mfsr  $26, $4;                  \n"
@@ -180,12 +153,9 @@ SW_TaskQueue_Dequeue_SLOW(int qID, TQ_TaskDesc *tdesc)
             "   ori   %0, $zero, 1              \n" // Success
             "                                   \n"
             "L%=_exit:                          \n"  
-            "   ldw   $26, $sp, 4 \n"
-            "   ldw   $27, $sp, 8 \n"
-            "   addi  $sp, $sp, 12 \n"                 
           : "=r"(has_global_lock) 
           :
-          : "27", "26", "1"
+          : "1", "26", "27", "memory"
         );
 
       if (has_global_lock) {
@@ -477,12 +447,6 @@ SW_TaskQueue_Dequeue_FAST(int qID, TQ_TaskDesc *tdesc)
   EVENTTRACK_IDLE_START();
 
   asm volatile ( 
-    "   addi   $sp, $sp, -28;                    \n" // r25: *ticket_count
-    "   stw   $24, $sp, 4;                      \n" // spill
-    "   stw   $25, $sp, 8;                      \n" // spill
-    "   stw   $26, $sp, 12                      \n" // spill
-    "   stw   $27, $sp, 16                      \n" // spill
-    "   stw   $28, $sp, 20                      \n" // spill
     "   mvui  $27, %%hi(CLUSTER_ltq_ticket_count); \n"
     "   addi  $27,  $27, CLUSTER_ltq_ticket_count; \n"
     "   mvui  $24, %%hi(CLUSTER_ltq_ticket_poll);  \n"
@@ -538,16 +502,11 @@ SW_TaskQueue_Dequeue_FAST(int qID, TQ_TaskDesc *tdesc)
     "   stw   $26,  %1, 0x8;                    \n"
     "   stw   $25,  %1, 0xc;                    \n"
     "I%=_DONE_DEQ: \n"
-    "   ldw   $24, $sp, 4;                      \n" // XXX: Dangerous?
-    "   ldw   $25, $sp, 8;                      \n" // XXX: Dangerous?
-    "   ldw   $26, $sp, 12;                      \n" // XXX: Dangerous?
-    "   ldw   $27, $sp, 16;                      \n" // XXX: Dangerous?
-    "   ldw   $28, $sp, 20;                      \n" // XXX: Dangerous?
-    "   addi   $sp, $sp, 28;                    \n" // r25: *ticket_count
     : "=r"(retval)
     : "r"(tdesc)
-    : "1", "2", "24", "25", "26", "27", "28"
+    : "1", "2", "24", "25", "26", "27", "28", "4", "5", "memory" //TODO Is this right, since we did a call?
   );
+
   // The way the counters work, every valid dequeue stops the DEQ counter, 
   // starts the TASK counter, and reset the idle since one did not occur.  If
   // a SYNC is found, no dequeue happened and it should be counted as an idle.
