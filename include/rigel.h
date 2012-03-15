@@ -80,11 +80,11 @@ void RigelBreakpoint();
 void RigelBarrier(BarrierInfo *bi);
 float LocalReduceFloat(BarrierInfo *bi, float val, volatile float *ReduceVals);
 
-// Enable/diable non-blocking atomics on a thread-by-thread basis.  The SPR for
+// Enable/disable non-blocking atomics on a thread-by-thread basis.  The SPR for
 // non-blocking atomics is $r14.
+// FIXME Uncomment this once we declare the correct read/write/clobber sets
 #define ENABLE_NONBLOCKING_ATOMICS() do {                     \
-    __asm__ __volatile__ ( " ori  $1, $zero, 1;\n"   \
-                   " mtsr $14, $1; ");        \
+    __asm__ __volatile__ ( "mtsr $14, %0; " ::"r"(1));   \
   } while (0);
 #define DISABLE_NONBLOCKING_ATOMICS() do {                \
   __asm__ __volatile__ ( "mtsr $14, $zero; ");     \
@@ -94,8 +94,7 @@ float LocalReduceFloat(BarrierInfo *bi, float val, volatile float *ReduceVals);
 #define SIM_SLEEP_ON() do {                     \
     int tid = RigelGetThreadNum();            \
     if (tid == 0) {                         \
-      __asm__ __volatile__ ( " ori  $1, $zero, 1;\n"   \
-                     " mtsr $9, $1; ");        \
+      __asm__ __volatile__ ( " mtsr $9, %0;" ::"r"(1));   \
     }                                           \
   } while (0);
 
@@ -176,7 +175,7 @@ float LocalReduceFloat(BarrierInfo *bi, float val, volatile float *ReduceVals);
 						"ori		%0, %1, 0;		                       \n"\
 									: "=r"(val), "=r"(temp)					  \
 									: "m"(_addr)							  \
-									: "1", "memory");				          \
+									: "memory");				          \
 	}
 
 // XXX: GLOBAL ATOMIC INC - Increment ['addr'] and put the result in 'val'
@@ -188,39 +187,30 @@ float LocalReduceFloat(BarrierInfo *bi, float val, volatile float *ReduceVals);
 						"ori		%0, %1, 0;		                       \n"\
 									: "=r"(val), "=r"(temp)					  \
 									: "m"(_addr)							  \
-									: "1", "memory");				          \
+									: "memory");				          \
 	}
 
 // XXX: GLOBAL ATOMIC EXCHANGE - Exchange 'val' for data at 'addr'
 #define RigelAtomicXCHG(val, addr) {                                          \
 	volatile unsigned int *_addr = (volatile unsigned int *)(&addr);          \
     int temp0, temp1;                                                         \
-	__asm__ __volatile__ (                          "or         %1, $0, %4;	                           \n"\
+	__asm__ __volatile__ (                          "or         %1, $zero, %4;	                           \n"\
 						"ldw        %2, %3;			                       \n"\
 						"atom.xchg  %1, %2, 0;	                           \n"\
-						"or			%0, %1, $0;	                           \n"\
+						"or			%0, %1, $zero;	                           \n"\
 						: "=r"(val), "=r"(temp0), "=r"(temp1)				  \
 						: "m"(_addr), "r"(val)				                  \
 						: "memory");				                  \
 	} while (0); 
 
-// XXX: GLOBAL COMPARE+SWAP: If 'compare' == ['addr'] then swapval <- ['addr']
-//				and ['addr'] <- swapval
-
-/*
-										"printreg 	$22; " \
-										"printreg 	$23; " \
-										"printreg 	$1; " \
-*/
-
 // FIXME: This could be made a bit more streamlined
 #define RigelAtomicADDU(addval, addr, retval)  { 			                  \
 	volatile unsigned int *_addr = (volatile unsigned int *)(&addr);	      \
     int temp0, temp1, temp2;                                                  \
-	__asm__ __volatile__ ( 		"or		   %2,  $0, %5;                            \n"\
+	__asm__ __volatile__ ( 		"or		   %2,  $zero, %5;                            \n"\
 						"ldw		   %3,  %4;                            \n"\
 						"atom.addu %1,  %2, %3;                            \n"\
-						"or        %0,  %1, $0;                            \n"\
+						"or        %0,  %1, $zero;                            \n"\
 						: "=r"(retval), "=r"(temp0), "=r"(temp1), "=r"(temp2) \
 						: "m"(_addr), "r"(addval)		                      \
 						: "memory");			                              \
@@ -229,10 +219,10 @@ float LocalReduceFloat(BarrierInfo *bi, float val, volatile float *ReduceVals);
 #define RigelAtomicMAX(addval, addr, retval)  { 			                  \
 	volatile unsigned int *_addr = (volatile unsigned int *)(&addr);	      \
     int temp0, temp1, temp2;                                                  \
-	__asm__ __volatile__ ( 		"or		   %2,  $0, %5;                            \n"\
+	__asm__ __volatile__ ( 		"or		   %2,  $zero, %5;                            \n"\
 						"ldw		   %3,  %4;                            \n"\
 						"atom.max  %1,  %2, %3;                            \n"\
-						"or        %0,  %1, $0;                            \n"\
+						"or        %0,  %1, $zero;                            \n"\
 						: "=r"(retval), "=r"(temp0), "=r"(temp1), "=r"(temp2) \
 						: "m"(_addr), "r"(addval)		                      \
 						: "memory");			                              \
@@ -241,10 +231,10 @@ float LocalReduceFloat(BarrierInfo *bi, float val, volatile float *ReduceVals);
 #define RigelAtomicMIN(addval, addr, retval)  { 			                  \
 	volatile unsigned int *_addr = (volatile unsigned int *)(&addr);	      \
     int temp0, temp1, temp2;                                                  \
-	__asm__ __volatile__ ( 		"or		   %2,  $0, %5;                            \n"\
+	__asm__ __volatile__ ( 		"or		   %2,  $zero, %5;                            \n"\
 						"ldw		   %3,  %4;                            \n"\
 						"atom.min  %1,  %2, %3;                            \n"\
-						"or        %0,  %1, $0;                            \n"\
+						"or        %0,  %1, $zero;                            \n"\
 						: "=r"(retval), "=r"(temp0), "=r"(temp1), "=r"(temp2) \
 						: "m"(_addr), "r"(addval)		                      \
 						: "memory");			                              \
@@ -253,10 +243,10 @@ float LocalReduceFloat(BarrierInfo *bi, float val, volatile float *ReduceVals);
 #define RigelAtomicOR(addval, addr, retval)  { 			                      \
 	volatile unsigned int *_addr = (volatile unsigned int *)(&addr);	      \
     int temp0, temp1, temp2;                                                  \
-	__asm__ __volatile__ ( 		"or		   %2,  $0, %5;                            \n"\
+	__asm__ __volatile__ ( 		"or		   %2,  $zero, %5;                            \n"\
 						"ldw		   %3,  %4;                            \n"\
 						"atom.or   %1,  %2, %3;                            \n"\
-						"or        %0,  %1, $0;                            \n"\
+						"or        %0,  %1, $zero;                            \n"\
 						: "=r"(retval), "=r"(temp0), "=r"(temp1), "=r"(temp2) \
 						: "m"(_addr), "r"(addval)		                      \
 						: "memory");			                              \
@@ -266,10 +256,10 @@ float LocalReduceFloat(BarrierInfo *bi, float val, volatile float *ReduceVals);
 #define RigelAtomicAND(addval, addr, retval)  { 			                  \
 	volatile unsigned int *_addr = (volatile unsigned int *)(&addr);	      \
     int temp0, temp1, temp2;                                                  \
-	__asm__ __volatile__ ( 		"or		   %2,  $0, %5;                            \n"\
+	__asm__ __volatile__ ( 		"or		   %2,  $zero, %5;                            \n"\
 						"ldw		   %3,  %4;                            \n"\
 						"atom.and  %1,  %2, %3;                            \n"\
-						"or        %0,  %1, $0;                            \n"\
+						"or        %0,  %1, $zero;                            \n"\
 						: "=r"(retval), "=r"(temp0), "=r"(temp1), "=r"(temp2) \
 						: "m"(_addr), "r"(addval)		                      \
 						: "memory");			                              \
@@ -278,25 +268,27 @@ float LocalReduceFloat(BarrierInfo *bi, float val, volatile float *ReduceVals);
 #define RigelAtomicXOR(addval, addr, retval)  { 			                  \
 	volatile unsigned int *_addr = (volatile unsigned int *)(&addr);	      \
     int temp0, temp1, temp2;                                                  \
-	__asm__ __volatile__ ( 		"or		   %2,  $0, %5;                            \n"\
+	__asm__ __volatile__ ( 		"or		   %2,  $zero, %5;                            \n"\
 						"ldw		   %3,  %4;                            \n"\
 						"atom.xor  %1,  %2, %3;                            \n"\
-						"or        %0,  %1, $0;                            \n"\
+						"or        %0,  %1, $zero;                            \n"\
 						: "=r"(retval), "=r"(temp0), "=r"(temp1), "=r"(temp2) \
 						: "m"(_addr), "r"(addval)		                      \
 						: "memory");			                              \
 	}
 
-#define RigelAtomicCAS(compare, swapval, addr) do { 			\
-	volatile unsigned int *_addr = (volatile unsigned int *)(&addr);			\
-	__asm__ __volatile__ ( 		"or					$26, $0, %2; \n" \
-										"or					$27, $0, %3; \n" \
-										"ldw				$1, %1;			\n"	\
-										"atom.cas 	$26, $27, $1;	\n"	\
-										"or					%0, $26, $0;	"		\
-									: "=r"(swapval)										\
-									: "m"(_addr), "r"(swapval), "r"(compare)		\
-									: "1", "26", "27", "memory");				\
+//FIXME This should be deleted and clients should be switched to use
+//a non-macro version
+#define RigelAtomicCAS(compare, swapval, addr) do {                \
+	volatile unsigned int *_addr = (volatile unsigned int *)(&addr); \
+	int temp0;                                                       \
+	__asm__ __volatile__ (                                           \
+										"ldw				%1, %2;			\n"	                   \
+										"atom.cas 	%3, %4, %1;	\n"	                   \
+										"or					%0, %3, $zero;"		                 \
+									: "=r"(swapval), "=r"(temp0)                     \
+									: "m"(_addr), "r"(swapval), "r"(compare)		     \
+									: "memory");				                             \
 	} while (0); 
 
 // XXX: GLOBAL MEMORY ACCESSES - Load/Store value 'val' into the address 'addr'.
@@ -321,22 +313,24 @@ float LocalReduceFloat(BarrierInfo *bi, float val, volatile float *ReduceVals);
     } while (0);
 
 #define RigelGlobalLoad(val, addr) do {         \
-    volatile unsigned int *_addr = (volatile unsigned int *)(&addr);            \
-    __asm__ __volatile__ (      "ldw            $1, %1;         \n" \
-                                        "g.ldw      $1, $1, 0; \n"      \
-                                        "or             %0, $1, $0;"        \
-                                    : "=r"(val)                             \
-                                    : "m"(_addr)                            \
-                                    : "1", "memory");               \
+    volatile unsigned int *_addr = (volatile unsigned int *)(&addr); \
+	  int tmp;                                          \
+    __asm__ __volatile__ ( "ldw            %1, %2;\n" \
+                           "g.ldw      %1, %1, 0; \n" \
+                           "ori         %0, %1, 0;"   \
+                           : "=r"(val), "=r"(tmp)     \
+                           : "m"(_addr)               \
+                           : "memory");               \
     } while (0); 
 
 #define RigelGlobalStore(val, addr) do {        \
-    volatile unsigned int *_addr = (volatile unsigned int *)(&addr);            \
-    __asm__ __volatile__ (  "ldw        $1, %1; \n"             \
-                                    "g.stw %0, $1, 0; "                 \
-                                    :                                               \
-                                    : "r"(val), "m"(_addr)      \
-                                    : "memory");                            \
+    volatile unsigned int *_addr = (volatile unsigned int *)(&addr); \
+	  int tmp;                                                         \
+    __asm__ __volatile__ (          "ldw %0, %2; \n"                 \
+                                    "g.stw %1, %0, 0;"               \
+                                    : "=r"(tmp)                      \
+                                    : "r"(val), "m"(_addr)           \
+                                    : "memory");                     \
     } while (0); 
 
 
@@ -344,54 +338,57 @@ float LocalReduceFloat(BarrierInfo *bi, float val, volatile float *ReduceVals);
 // XXX: CLUSTER-LEVEL ATOMICS  - Load-linked and store conditional.  Load-Link
 // is nothing special from an API point of view.  Store-conditional has an extra
 // parameter that is set to '1' when the STC succeeds and '0' should it fail
-#define RigelStoreCond(val, addr, succ) do { 		\
-	volatile unsigned int *_addr = (volatile unsigned int *)(&addr);			\
-	__asm__ __volatile__ ( 	"ldw		$1, %2; \n"				\
-									"stc 		$1, %1, $1; "			\
-									"ori 		%0, $1, 0; " 			\
-									: "=r"(succ)							\
+#define RigelStoreCond(val, addr, succ) do { 	                     \
+	volatile unsigned int *_addr = (volatile unsigned int *)(&addr); \
+	int tmp;                                                         \
+	__asm__ __volatile__ ( 	"ldw		%1, %3; \n"				               \
+									"stc 		%1, %2, %1; "			\
+									"ori 		%0, %1, 0; " 			\
+									: "=r"(succ), "=r"(tmp)   \
 									: "r"(val), "m"(_addr) 		\
 									: "memory"); 							\
 	} while (0); 
 
-#define RigelLoadLinked(val, addr) do { 		\
-	volatile unsigned int *_addr = (volatile unsigned int *)(&addr);			\
-	__asm__ __volatile__ ( 		"ldw			$1, %1;			\n"	\
-										"ldl 			$1, $1; \n"		\
-										"or				%0, $1, $0;"		\
-									: "=r"(val)								\
-									: "m"(_addr) 							\
-									: "1", "memory"); 				\
+#define RigelLoadLinked(val, addr) do {                            \
+	volatile unsigned int *_addr = (volatile unsigned int *)(&addr); \
+	int tmp;                                                         \
+	__asm__ __volatile__ ( "ldw	%1, %2;\n"                           \
+										     "ldl	%1, %1; \n"                          \
+										     "ori %0, %1, 0;"                          \
+									       : "=r"(val)								               \
+									       : "m"(_addr)                              \
+                         : "memory");                              \
 	} while (0); 
 
 // XXX: BROADCASTS - Write a value to memory and send notifications to all of
 // the cluster caches informing them of its modification
-#define RigelBroadcastUpdate(val, addr) do { 		\
-	volatile unsigned int *_addr = (volatile unsigned int *)(&addr);			\
-	__asm__ __volatile__ ( 	"ldw		$1, %1; \n"				\
-									"bcast.u %0, $1, 0; "					\
-									: 												\
-									: "r"(val), "m"(_addr) 		\
-									: "memory"); 							\
+#define RigelBroadcastUpdate(val, addr) do {                       \
+	volatile unsigned int *_addr = (volatile unsigned int *)(&addr); \
+	int tmp;                                                         \
+	__asm__ __volatile__ ( "ldw		%0, %2; \n"                        \
+									       "bcast.u %1, %0, 0;"                      \
+									       : "=r"(tmp)                               \
+									       : "r"(val), "m"(_addr)                    \
+									       : "memory");                              \
 	} while (0); 
 
 
 // XXX: PIPELINE SYNC - Enforces all in-flight instructions to complete before
 // 				retiring the SYNC.  When SYNC retires, fetch is also restarted.
 #define RigelSync() do { \
-		__asm__ ( "sync;" ); \
+		__asm__ __volatile__ ( "sync;"::"memory" ); \
 	} while (0);
 // XXX: MEMORY BARRIER - Enforces that all previous memory operations leaving
 // 				the cluster cache complete before allowing any future requests to be
 // 				serviced 
 #define RigelMemoryBarrier() do { \
-		__asm__ ( "mb;" ); \
+		__asm__ __volatile__ ( "mb;"::"memory" ); \
 	} while (0);
 // XXX:	WRITEBACK LINE - Flushes the line back to the global cache but does not
 // 				invalidate it in the cluster cache.
 // void RigelWritebackLine(void *addr)
 #define RigelWritebackLine(addr) \
-	do { __asm__ ( "line.wb	%0;"  	\
+	do { __asm__ __volatile__ ( "line.wb	%0;"  	\
 						:								\
 						: "r"(addr)			\
 						: "memory" 			\
@@ -439,15 +436,6 @@ float LocalReduceFloat(BarrierInfo *bi, float val, volatile float *ReduceVals);
 
 #define RigelPrint(x) \
     __asm__ ( "printreg %0;" : : "r"(x))
-
-/*
-//#define RigelPrint(x) \
- //   do {	asm(" addi $28, %0, 0;"\
- //       	" printreg $28;" \
- //       			: \
- //       			: "r"(x) \
- //      ); } while(0);
-*/
 
 void RigelPrintFunc(uint32_t x);
 
