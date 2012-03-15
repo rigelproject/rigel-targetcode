@@ -99,11 +99,14 @@ void four1(REAL *data, const int nn, const int isign)
 {
   int n, mmax, m, j, istep, i, tblIndex;
   REAL wtemp, wr, wpr, wpi, wi, theta, tempr, tempi;
+	// Calling a varargs function causes an extra 32 bytes of stack alloc
+#if 0
   if (nn<2 || nn&(nn-1))
   {
     printf("Error: nn must be power of 2 in four1 (not %d)\n", nn);
     RigelAbort();
   }
+#endif
   n = nn << 1;
   j = 1;
 
